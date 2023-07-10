@@ -1,17 +1,23 @@
 import os
 import pandas as pd
 import torch
+import random
 import numpy as np
 from transformers import BertTokenizer, BertModel
 from torch import nn
 from torch.optim import Adam
 from tqdm import tqdm
+from imblearn.over_sampling import RandomOverSampler, SMOTE
+from imblearn.under_sampling import RandomUnderSampler, NearMiss
+from collections import Counter
+from more_itertools import locate
 
 import glob
 import pickle
 import numpy
 from music21 import converter, instrument, note, chord
 
+torch.manual_seed(41)
 
 def get_notes(path_to_resources_folder: str, octave_aware=True):
     """ Get all the notes and chords from the midi files in the ./midi_songs directory """
@@ -20,7 +26,7 @@ def get_notes(path_to_resources_folder: str, octave_aware=True):
     if octave_aware:
         path_to_notes_file = os.path.join(path_to_resources_folder, "data", "notes")
     else:
-        path_to_notes_file = os.path.join(path_to_resources_folder, "data", "notes_no_octave")
+        path_to_notes_file = os.path.join(path_to_resources_folder, "data", "notes_no_octave_no_chords")
 
     path_to_midi_files = os.path.join(path_to_resources_folder, "midi_songs")
 
@@ -49,7 +55,9 @@ def get_notes(path_to_resources_folder: str, octave_aware=True):
                 else:
                     notes.append(str(element.pitch.pitchClass))
             elif isinstance(element, chord.Chord):
-                notes.append('.'.join(str(n) for n in element.normalOrder))
+                continue
+                notes.append(str(element.normalOrder[0]))
+                # notes.append('.'.join(str(n) for n in element.normalOrder))
 
     with open(path_to_notes_file, 'wb') as filepath:
         pickle.dump(notes, filepath)
@@ -57,18 +65,51 @@ def get_notes(path_to_resources_folder: str, octave_aware=True):
     return notes
 
 
-def prepare_dataset(notes, in_seq_length):
+def over_sample(x: list, y: list):
+    pitchnames = sorted(set(y))
+    index_count = []
+    input_list = []
+    x_np = np.array(x)
+    for i in pitchnames:
+        index_count.append(y.count(i))
+        input_list.append(x_np[list(locate(y, lambda n: n == i))])
+    prominent_value = np.max(np.array(index_count))
+    print(prominent_value)
+
+    np.random.seed(112)
+    random.seed(112)
+    for i in range(len(index_count)):
+        while index_count[i] < prominent_value:
+            x_array = np.random.choice(input_list[i]).tolist()
+            # print(x_array)
+            x.append(x_array)
+            y.append(pitchnames[i])
+            index_count[i] += 1
+
+    return x, y
+
+
+
+
+def prepare_dataset(notes, in_seq_length, over_sampling=False):
     pitchnames = sorted(set(item for item in notes))
     note_to_int = dict((note, number) for number, note in enumerate(pitchnames))
 
     input = []
     expected_result = []
 
-    for i in range(0, 2000, 1):# len(notes) - in_seq_length, 1):
+    for i in range(0, 6000, 1):# len(notes) - in_seq_length, 1):
         sequence_in = notes[i:i + in_seq_length]
         sequence_out = notes[i + in_seq_length]
-        input.append(','.join(sequence_in))
+        input.append(' '.join(sequence_in))
         expected_result.append(sequence_out)
+
+    #for i in range(12):
+    #    print(f"Note {i}: {expected_result.count(str(i))}")
+
+    if over_sampling:
+        input, expected_result = over_sample(input, expected_result)
+        print(sorted(Counter(expected_result).items()))
 
     df = pd.DataFrame({'text': input, 'category': expected_result})
     np.random.seed(112)
@@ -81,14 +122,11 @@ OCTAVE_AWARE = False
 src_path = os.path.dirname(__file__)
 resources_path = os.path.join(src_path, "resources")
 
-print(resources_path)
-
 notes = get_notes(resources_path, OCTAVE_AWARE)
 pitchnames = sorted(set(item for item in notes))
 n_vocab = len(pitchnames)
 note_to_int = dict((note, number) for number, note in enumerate(pitchnames))
 labels = note_to_int
-
 
 tokenizer = BertTokenizer.from_pretrained('bert-base-cased', torchscript=True)
 
@@ -103,7 +141,7 @@ class Dataset(torch.utils.data.Dataset):
     def __init__(self, df):
         self.labels = [labels[label] for label in df['category']]
         self.texts = [tokenizer(text,
-                               padding='max_length', max_length = 512, truncation=True,
+                               padding='max_length', max_length=200, truncation=True,
                                 return_tensors="pt") for text in df['text']]
 
     def classes(self):
@@ -146,7 +184,7 @@ class BertClassifier(nn.Module):
         return final_layer
 
 
-def train(model, train_data, val_data, learning_rate, epochs):
+def train(model, train_data, val_data, learning_rate, epochs, dump=False):
     train, val = Dataset(train_data), Dataset(val_data)
 
     train_dataloader = torch.utils.data.DataLoader(train, batch_size=2, shuffle=True)
@@ -157,6 +195,11 @@ def train(model, train_data, val_data, learning_rate, epochs):
 
     criterion = nn.CrossEntropyLoss()
     optimizer = Adam(model.parameters(), lr=learning_rate)
+
+    train_loss_per_epoch = []
+    train_acc_per_epoch = []
+    val_loss_per_epoch = []
+    val_acc_per_epoch = []
 
     if use_cuda:
         model = model.cuda()
@@ -200,8 +243,22 @@ def train(model, train_data, val_data, learning_rate, epochs):
                 acc = (output.argmax(dim=1) == val_label).sum().item()
                 total_acc_val += acc
 
+        train_loss_per_epoch.append(total_loss_train/len(train_data))
+        train_acc_per_epoch.append(total_acc_train/len(train_data))
+        val_loss_per_epoch.append(total_loss_val/len(val_data))
+        val_acc_per_epoch.append(total_acc_val/len(val_data))
+
         print(
             f'Epochs: {epoch_num + 1} | Train Loss: {total_loss_train / len(train_data): .3f} | Train Accuracy: {total_acc_train / len(train_data): .3f} | Val Loss: {total_loss_val / len(val_data): .3f} | Val Accuracy: {total_acc_val / len(val_data): .3f}')
+
+    if dump:
+        train_dump = pd.DataFrame({
+            'train_loss': np.array(train_loss_per_epoch),
+            'train_accuracy': np.array(train_acc_per_epoch),
+            'validation_loss': np.array(val_loss_per_epoch),
+            'validation_accuracy': np.array(val_acc_per_epoch),
+        })
+        train_dump.to_csv('resources/neural_network/training_data/train_dump.csv')
 
 
 def evaluate(model, test_data):
@@ -250,16 +307,15 @@ def save_torch_model_to_file(model: BertClassifier, test_data, file_path: str, v
   if octave_aware:
     traced_script_module.save(os.path.join(file_path, "berthoven_model_v"+str(version)+".pt"))
   else:
-    traced_script_module.save(os.path.join(file_path, "berthoven_model_no_octave_v"+str(version)+".pt"))
+    traced_script_module.save(os.path.join(file_path, "berthoven_balanced_no_chords_v"+str(version)+".pt"))
 
 
-df_train, df_val, df_test = prepare_dataset(notes, 10)
-
-EPOCHS = 100
+df_train, df_val, df_test = prepare_dataset(notes, 100, over_sampling=True)
+EPOCHS = 20
 model = BertClassifier(n_vocab)
 LR = 1e-6
 
-train(model, df_train, df_val, LR, EPOCHS)
+train(model, df_train, df_val, LR, EPOCHS, dump=True)
 
 evaluate(model, df_test)
-save_torch_model_to_file(model, df_test, os.path.join(resources_path, "neural_network", "models"), 1, OCTAVE_AWARE)
+save_torch_model_to_file(model, df_test, os.path.join(resources_path, "neural_network", "models"), 6, OCTAVE_AWARE)
