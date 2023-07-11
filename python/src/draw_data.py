@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-data = pd.read_csv('resources/neural_network/training_data/train_dump_berthoven_i100_e20_balanced_no_chords_teacc888.csv')
+data = pd.read_csv('resources/neural_network/training_data/train_dump_berthoven_i100_e27_balanced_no_chords_shuffled_teacc701.csv')
 
 train_accuracy = data['train_accuracy']
 validation_accuracy = data['validation_accuracy']
