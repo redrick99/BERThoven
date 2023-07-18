@@ -24,6 +24,11 @@ BerthovenProcessor::BerthovenProcessor()
 , model {}
 {
     startTime = std::chrono::high_resolution_clock::now();
+    std::string path = std::filesystem::path(__FILE__).parent_path().string() + "/predicted_notes.mid";
+    juce::File midiRawFile = juce::File::createFileWithoutCheckingPath(path);
+    if (midiRawFile.existsAsFile()) {
+        midiRawFile.deleteFile();
+    }
 }
 
 

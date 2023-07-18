@@ -47,7 +47,7 @@ private:
     torch::jit::script::Module bert;
     std::map<int, std::string> pred2class;
     std::string pathToNotesFile = "/resources/notes_no_octave.txt";
-    std::string pathToModule = "/resources/berthoven_i100_e20_balanced_no_chords_teacc888.pt";
+    std::string pathToModule = "/resources/FINAL_BERTHOVEN_MODEL.pt";
     std::string pathToVocab = "/resources/bert_cased_vocab.txt";
 
     std::pair<torch::Tensor, torch::Tensor> preprocess(std::string text, std::map<std::string, int> token2id, int max_length, bool log = false);

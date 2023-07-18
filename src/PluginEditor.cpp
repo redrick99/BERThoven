@@ -28,7 +28,6 @@ BerthovenEditor::BerthovenEditor (BerthovenProcessor& p)
 
     noteDurationSlider.addListener(this);
     noteDurationSlider.setRange(0.5, 4.0, 0.1);
-    noteDurationSlider.setTextValueSuffix(" s");
     noteDurationSliderLabel.setText("Note duration", juce::dontSendNotification);
 
     predictButton.addListener(this);
