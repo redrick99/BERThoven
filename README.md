@@ -9,7 +9,16 @@ _BERThoven_ is a complete application that can generate melodies based on an inp
 
 In general, the plugin system allows users to generate melodies in two ways: by playing notes directly on the plugin’s keyboard or by loading a MIDI file onto the plugin interface. After composing or selecting the MIDI input, the user can press a button to predict the next n notes of the sequence. The plugin offers some parameters to personalize the user experience and the interaction with the generator, such as the number of notes to predict and the length of the predicted notes. One the notes are predicted, the user can drag and drop the output as a MIDI file onto his DAW of choice or some- where in his system where it is stored.
 
+## How _BERThoven_ Works
+<a align="center" target="_blank">
+  <img src="./readme_files/Workflow.png" width="70%" />
+</a>
+The plugin allows users to generate melodies in two ways: by playing notes directly on the plugin's keyboard or by loading a MIDI file onto the plugin interface. After composing or selecting the MIDI input, the user can press a button to predict the next $n$ notes of the sequence. The plugin offers some parameters to personalize the user experience and the interaction with the generator, such as the number of notes to predict and the length of the predicted notes. One the notes are predicted, the user can drag and drop the output as a MIDI file onto his DAW of choice or somewhere in his system where it is stored.
+
 ## _BERThoven_'s GUI
+<a align="center" target="_blank">
+  <img src="./readme_files/BERThoven_GUI.png" width="70%" />
+</a>
 The _BERThoven_ plugin was designed to be straightforward and easy to use. Its user-friendly interface enables quick and easy interaction, allowing musicians and composers to generate melodies effortlessly. There is a total of 7 UI components, including the virtual MIDI keyboard. Those are, in the order in which they appear on the GUI:
 
 - Num. of Notes Slider: Controls the number of notes to predict for each press of the Predict button. It ranges from 1 to 50 notes.
