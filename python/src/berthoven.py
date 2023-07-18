@@ -1,4 +1,5 @@
 import os
+import re
 import time
 import pandas as pd
 import torch
@@ -10,6 +11,7 @@ from torch.optim import Adam
 from tqdm import tqdm
 from collections import Counter
 from more_itertools import locate
+from pathlib import Path
 
 import glob
 import pickle
@@ -225,6 +227,16 @@ def train(model, train_data, val_data, learning_rate, epochs, batch_size: int, p
     epsilon = .001
     patience = 5
 
+    if load:
+        model, optimizer, start_epoch = load_model_checkpoints(model, optimizer, path_to_checkpoint)
+        train_dump = pd.read_csv(path_to_model+'_dump.csv')
+        train_loss_per_epoch = train_dump['train_loss'].values().tolist()
+        train_acc_per_epoch = train_dump['train_accuracy'].values().tolist()
+        val_loss_per_epoch = train_dump['validation_loss'].values().tolist()
+        val_acc_per_epoch = train_dump['validation_accuracy'].values().tolist()
+        elapsed_time_per_epoch = train_dump['time'].values().tolist()
+        best_val_loss = val_loss_per_epoch[len(val_loss_per_epoch) - 1]
+
     if use_cuda:
         model = model.cuda()
         criterion = criterion.cuda()
@@ -354,18 +366,70 @@ def create_and_train_new_model(r_path, n_vocab, notes, n_samp, epochs, seq_len, 
     df_train, df_val, df_test = prepare_dataset(notes, in_seq_length=seq_len, over_sampling=over_sampling,
                                                 shuffle=shuffle, num_of_samples=n_samp)
 
-    train(model, df_train, df_val, LR, EPOCHS, batch_size, path_to_model=model_path, path_to_checkpoint=check_path,
+    train(model, df_train, df_val, lr, epochs, batch_size, path_to_model=model_path, path_to_checkpoint=check_path,
           early_stopping=e_stop, load=False)
+
+
+def extract_parameters(input_string):
+    # Define the regular expression pattern to match numbers
+    pattern = r'\d+'
+
+    # Use regular expression to find all numbers in the input string
+    numbers = re.findall(pattern, input_string)
+
+    # Convert the numbers to appropriate data types if needed
+    e = int(numbers[0])
+    n = int(numbers[1])
+    i = int(numbers[2])
+    lr = round(float(numbers[3]))*(10**(-float(numbers[4])))
+    bs = int(numbers[5])
+    os = bool(numbers[6])
+    s = bool(numbers[7])
+
+    # Return the extracted parameters as a dictionary
+    return {
+        'e': e,
+        'n': n,
+        'i': i,
+        'lr': lr,
+        'bs': bs,
+        'os': os,
+        's': s
+    }
+
+
+def resume_training(r_path, path_to_checkpoint, model_name, n_vocab, notes, epochs, e_stop):
+    params = extract_parameters(path_to_checkpoint)
+    n_samp = params['n']
+    seq_len = params['i']
+    lr = params['lr']
+    batch_size = params['bs']
+    over_sampling = params['os']
+    shuffle = params['s']
+
+    model_path = os.path.join(r_path, "neural_network", "evaluation_models_dumps", model_name)
+
+    model = BertClassifier(n_vocab)
+    df_train, df_val, df_test = prepare_dataset(notes, in_seq_length=seq_len, over_sampling=over_sampling,
+                                                shuffle=shuffle, num_of_samples=n_samp)
+
+    train(model, df_train, df_val, lr, epochs, batch_size, path_to_model=model_path, path_to_checkpoint=path_to_checkpoint,
+          early_stopping=e_stop, load=True)
 
 
 NUM_OF_SAMPLES = 10000
 EPOCHS = 20
 IN_SEQ_LENGTH = 100
-LR = 1e-6
+LR = 5e-6
 BATCH_SIZE = 16
 
-num_samples_array = [100, 1000, 5000]
+model = BertClassifier(n_vocab)
+optimizer = Adam(model.parameters(), lr=LR)
+path_to_checkpoint = os.path.join(resources_path, 'neural_network', 'checkpoints', 'a_e20_n10000_i100_lr5e-06_bs16_os1_s0')
+path_to_saved_model = os.path.join(resources_path, 'neural_network', 'libtorch_models', 'FINAL_BERTHOVEN_MODEL')
 
-for num_samples in num_samples_array:
-    create_and_train_new_model(resources_path, n_vocab, notes, num_samples, EPOCHS, IN_SEQ_LENGTH, LR, BATCH_SIZE, True, False, False)
-
+model, optimizer, start_epoch = load_model_checkpoints(model, optimizer, path_to_checkpoint)
+df_train, df_val, df_test = prepare_dataset(notes, in_seq_length=IN_SEQ_LENGTH, over_sampling=True,
+                                                shuffle=False, num_of_samples=NUM_OF_SAMPLES)
+evaluate(model, test_data=df_test)
+save_torch_model_to_file(model, df_test, path_to_saved_model)
