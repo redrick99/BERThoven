@@ -8,6 +8,10 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <juce_audio_utils/juce_audio_utils.h>
 
+/**
+ * @class DragAndDropTargetComponent
+ * @brief Defines a GUI component where files can be dropped.
+ */
 class DragAndDropTargetComponent : public juce::TextButton,
                                    public juce::FileDragAndDropTarget
 {

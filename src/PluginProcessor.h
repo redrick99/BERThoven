@@ -62,10 +62,21 @@ public:
     /** add some midi to be played at the sent sample offset*/
     void addMidi(juce::MidiMessage msg, int sampleOffset);
 
+    /**
+     * @brief Predicts a number of notes using BERThoven's model.
+     * @param numberOfNotesToPredict Specified by the user.
+     * @param noteDurationInSeconds Duration of each predicted note in seconds.
+     * @param externalMessages Vector containing external messages if the user dropped a MIDI file on the GUI.
+     */
     void predict(int numberOfNotesToPredict, double noteDurationInSeconds, std::vector<juce::MidiMessage> externalMessages);
+    /**
+     * @brief Resets the neural network model to initial conditions.
+     */
     void resetModel();
 private:
+    /// Model used for prediction.
     BerthovenModel model;
+    /// Temporary file on which to store predicted notes.
     juce::File predictedNotesFile;
 
     /** stores messages added from the addMidi function*/
@@ -73,6 +84,10 @@ private:
 
     std::chrono::high_resolution_clock::time_point startTime;
 
+    /**
+     * Creates a MIDI file from a vector of MIDI events.
+     * @param midiEvents MIDI events from which to create the file.
+     */
     void createMidiFile(const std::vector<juce::MidiMessage>& midiEvents);
 
     //==============================================================================

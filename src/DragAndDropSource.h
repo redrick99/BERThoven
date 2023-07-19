@@ -7,6 +7,10 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+/**
+ * @class DragAndDropSource
+ * @brief Defines a region from which files and components can be grabbed on the GUI.
+ */
 class DragAndDropSource : public juce::TextButton {
 public:
     // void paint(juce::Graphics &g) override;

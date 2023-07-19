@@ -47,6 +47,7 @@ public:
     void handleNoteOff(juce::MidiKeyboardState *source, int midiChannel, int midiNoteNumber, float velocity) override;
 
 private:
+    /// Background image of Beethoven.
     juce::Image background;
     double noteDurationInSeconds = 0.5;
 
@@ -60,7 +61,6 @@ private:
 
     // GUI widgets
     juce::TextButton backgroundButton;
-
     juce::TextButton predictButton;
     juce::TextButton resetButton;
     juce::Slider numberOfNotesSlider;
@@ -70,6 +70,7 @@ private:
     DragAndDropSource dragAndDropSource;
     DragAndDropTargetComponent dragAndDropTarget;
 
+    /// Toggles all GUI components to be enabled or disabled.
     void toggleEnableComponents(bool enabled);
 
     // Parameters
