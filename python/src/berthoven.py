@@ -11,11 +11,9 @@ from torch.optim import Adam
 from tqdm import tqdm
 from collections import Counter
 from more_itertools import locate
-from pathlib import Path
 
 import glob
 import pickle
-import numpy
 from music21 import converter, instrument, note, chord
 
 torch.manual_seed(41)
@@ -50,7 +48,7 @@ def get_notes(path_to_resources_folder: str):
         for element in notes_to_parse:
             if isinstance(element, note.Note):
                 notes.append(str(element.pitch.pitchClass))
-            elif isinstance(element, chord.Chord):
+            elif isinstance(element, chord.Chord):  # If it's a chord, skip it
                 continue
                 notes.append(str(element.normalOrder[0]))
                 # notes.append('.'.join(str(n) for n in element.normalOrder))
@@ -99,7 +97,7 @@ def prepare_dataset(notes, in_seq_length, over_sampling=False, shuffle=False, nu
         expected_result.append(sequence_out)
 
     if shuffle:
-        combined_list = list(zip(input, expected_result))
+        combined_list = list(zip(input, expected_result))  # Order lists without mixing output labels
         random.shuffle(combined_list)
         input, expected_result = zip(*combined_list)
         input = list(input)
@@ -108,15 +106,13 @@ def prepare_dataset(notes, in_seq_length, over_sampling=False, shuffle=False, nu
     input = input[:num_of_samples]
     expected_result = expected_result[:num_of_samples]
 
-    # for i in range(12):
-    #    print(f"Note {i}: {expected_result.count(str(i))}")
-
     if over_sampling:
         input, expected_result = over_sample(input, expected_result)
         print(sorted(Counter(expected_result).items()))
 
     df = pd.DataFrame({'text': input, 'category': expected_result})
     np.random.seed(112)
+    # Dataset split nin 80%, 10% and 10% for Training, Validation and Evaluation
     df_train, df_val, df_test = np.split(df.sample(frac=1, random_state=42), [int(.8 * len(df)), int(.9 * len(df))])
     return df_train, df_val, df_test
 
@@ -132,6 +128,7 @@ labels = note_to_int
 
 tokenizer = BertTokenizer.from_pretrained('bert-base-cased', torchscript=True)
 
+# Write txt file with tokens to be read by the C++ code
 vocab_file = open(os.path.join(resources_path, "data", "bert_cased_vocab.txt"), "w", encoding="utf-8")
 for i, j in tokenizer.get_vocab().items():
     vocab_file.write(f"{i} {j}\n")
@@ -187,6 +184,7 @@ class BertClassifier(nn.Module):
 
 
 def save_model_checkpoints(epoch: int, model, optimizer, path_to_model_checkpoint):
+    """Saves the current state of the model to a checkpoint."""
     torch.save({
         'epoch': epoch,
         'model_state_dict': model.state_dict(),
@@ -195,6 +193,7 @@ def save_model_checkpoints(epoch: int, model, optimizer, path_to_model_checkpoin
 
 
 def load_model_checkpoints(model, optimizer, path_to_model_checkpoint):
+    """Loads the state of the model and its optimizer from a checkpoint."""
     checkpoint = torch.load(path_to_model_checkpoint + ".pth")
     model.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
@@ -204,6 +203,7 @@ def load_model_checkpoints(model, optimizer, path_to_model_checkpoint):
 
 def train(model, train_data, val_data, learning_rate, epochs, batch_size: int, path_to_model="", path_to_checkpoint="",
           early_stopping=True, load=False):
+    """Trains and Validates the model."""
     train, val = Dataset(train_data), Dataset(val_data)
 
     train_dataloader = torch.utils.data.DataLoader(train, batch_size=batch_size, shuffle=False)
@@ -290,6 +290,7 @@ def train(model, train_data, val_data, learning_rate, epochs, batch_size: int, p
             f'Epochs: {epoch_num + 1} | Train Loss: {total_loss_train / len(train_data): .3f} | Train Accuracy: {total_acc_train / len(train_data): .3f} | Val Loss: {total_loss_val / len(val_data): .3f} | Val Accuracy: {total_acc_val / len(val_data): .3f}')
 
         if total_loss_val < best_val_loss - epsilon:
+            # Save model as checkpoint if it reached a lower validation loss
             best_val_loss = total_loss_val
             early_stop_counter = 0
             if path_to_checkpoint != "":
@@ -302,6 +303,7 @@ def train(model, train_data, val_data, learning_rate, epochs, batch_size: int, p
             break
 
     if path_to_model != "":
+        # Save performances of the model unto a csv file.
         train_dump = pd.DataFrame({
             'train_loss': np.array(train_loss_per_epoch),
             'train_accuracy': np.array(train_acc_per_epoch),
@@ -313,6 +315,7 @@ def train(model, train_data, val_data, learning_rate, epochs, batch_size: int, p
 
 
 def evaluate(model, test_data):
+    """Evaluates the model."""
     test = Dataset(test_data)
 
     test_dataloader = torch.utils.data.DataLoader(test, batch_size=2)
@@ -339,6 +342,7 @@ def evaluate(model, test_data):
 
 
 def save_torch_model_to_file(model: BertClassifier, test_data, path_to_model: str):
+    """Traces the torch model to a file readable on the C++ application."""
     test = Dataset(test_data)
     test_dataloader = torch.utils.data.DataLoader(test, batch_size=2)
 
@@ -357,6 +361,7 @@ def save_torch_model_to_file(model: BertClassifier, test_data, path_to_model: st
 
 def create_and_train_new_model(r_path, n_vocab, notes, n_samp, epochs, seq_len, lr, batch_size, over_sampling, shuffle,
                                e_stop):
+    """Creates a new model with given hyperparameters and trains it, also assign it a name."""
     model_name = "a_e" + str(epochs) + "_n" + str(n_samp) + "_i" + str(seq_len) + "_lr" + str(lr) + "_bs" + str(
         batch_size) + "_os" \
                  + str(int(over_sampling)) + "_s" + str(int(shuffle))
@@ -371,6 +376,7 @@ def create_and_train_new_model(r_path, n_vocab, notes, n_samp, epochs, seq_len, 
 
 
 def extract_parameters(input_string):
+    """Extracts hyperparameters of a model given its name as a string."""
     # Define the regular expression pattern to match numbers
     pattern = r'\d+'
 
@@ -399,6 +405,7 @@ def extract_parameters(input_string):
 
 
 def resume_training(r_path, path_to_checkpoint, model_name, n_vocab, notes, epochs, e_stop):
+    """Resumes training for a model given its checkpoint path and its name."""
     params = extract_parameters(path_to_checkpoint)
     n_samp = params['n']
     seq_len = params['i']
