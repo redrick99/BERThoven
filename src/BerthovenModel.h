@@ -34,6 +34,12 @@ public:
     ~BerthovenModel();
 
     /**
+     * @brief Setter for the ticksPerQuarterNote attribute.
+     * @param _ticksPerQuarterNote New value to set.
+     */
+    void setTicksPerQuarterNote(double _ticksPerQuarterNote);
+
+    /**
      * @brief Stores MIDI events to be used for prediction.
      * @param event MIDI event to be stored.
      */
@@ -84,6 +90,9 @@ private:
     std::string pathToNotesFile = "/resources/notes_no_octave.txt";
     std::string pathToModule = "/resources/FINAL_BERTHOVEN_MODEL.pt";
     std::string pathToVocab = "/resources/bert_cased_vocab.txt";
+
+    /// Default tick resolution value for Logic Pro X
+    double ticksPerQuarterNote = 960.0;
 
     /**
      * @brief Preprocesses the given input text into tensors used for inference on the model.
@@ -140,10 +149,10 @@ private:
     /**
      * @brief Converts notes from their integer value to actual MIDI messages.
      * @param midiNotes Vector containing the note's integer values (divided by chord).
-     * @param noteDurationInSeconds Duration of each note in seconds.
+     * @param noteDurationInQuarters Duration of each note in quarters.
      * @return A vector containing the parsed MIDI messages.
      */
-    std::vector<juce::MidiMessage> midiNotesToMessages(const std::vector<std::vector<int>> midiNotes, double noteDurationInSeconds);
+    std::vector<juce::MidiMessage> midiNotesToMessages(const std::vector<std::vector<int>> midiNotes, double noteDurationInQuarters);
     /**
      * @brief Converts a string of notes into its integer representation.
      * @param notesString String containing notes.

@@ -57,5 +57,7 @@ void DragAndDropTargetComponent::fileDragExit(const juce::StringArray &files) {
 }
 
 std::vector<juce::MidiMessage> DragAndDropTargetComponent::getMidiMessages() {
-    return midiMessages;
+    std::vector<juce::MidiMessage> midiMessagesToReturn(midiMessages);
+    midiMessages.clear();
+    return midiMessagesToReturn;
 }

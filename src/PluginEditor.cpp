@@ -27,7 +27,8 @@ BerthovenEditor::BerthovenEditor (BerthovenProcessor& p)
     numberOfNotesSliderLabel.setText("Number of notes", juce::dontSendNotification);
 
     noteDurationSlider.addListener(this);
-    noteDurationSlider.setRange(0.5, 4.0, 0.1);
+    noteDurationSlider.setRange(0.5, 4, 0.5);
+    noteDurationSlider.setTextValueSuffix(" q");
     noteDurationSliderLabel.setText("Note duration", juce::dontSendNotification);
 
     predictButton.addListener(this);
@@ -109,7 +110,7 @@ void BerthovenEditor::sliderValueChanged (juce::Slider *slider)
         numberOfNotesToPredict = static_cast<int>(numberOfNotesSlider.getValue());
     }
     if (slider == &noteDurationSlider) {
-        noteDurationInSeconds = noteDurationSlider.getValue();
+        noteDurationInQuarters = noteDurationSlider.getValue();
     }
 }
 
@@ -119,7 +120,7 @@ void BerthovenEditor::buttonClicked(juce::Button* btn)
         predictButton.setButtonText("Predicting...");
         toggleEnableComponents(false);
         std::vector<juce::MidiMessage> externalMidis = dragAndDropTarget.getMidiMessages();
-        audioProcessor.predict(numberOfNotesToPredict, noteDurationInSeconds, externalMidis);
+        audioProcessor.predict(numberOfNotesToPredict, noteDurationInQuarters, externalMidis);
         dragAndDropTarget.setButtonText("Drop your MIDI file here!");
         dragAndDropSource.setButtonText("MIDI ready to be exported!");
         dragAndDropTarget.setAlpha(0.8f);

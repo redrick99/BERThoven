@@ -18,6 +18,10 @@ BerthovenModel::~BerthovenModel() {
 
 }
 
+void BerthovenModel::setTicksPerQuarterNote(double _ticksPerQuarterNote) {
+    ticksPerQuarterNote = _ticksPerQuarterNote;
+}
+
 void BerthovenModel::putMidiEvent(juce::MidiMessage &event) {
     if (!event.isNoteOn())
         return;
@@ -246,11 +250,10 @@ std::vector<std::string> BerthovenModel::createNotesForPrediction(std::vector<ju
     return predictionNotes;
 }
 
-std::vector<juce::MidiMessage> BerthovenModel::midiNotesToMessages(const std::vector<std::vector<int>> midiNotes, double noteDurationInSeconds) {
+std::vector<juce::MidiMessage> BerthovenModel::midiNotesToMessages(const std::vector<std::vector<int>> midiNotes, double noteDurationInQuarters) {
     std::vector<juce::MidiMessage> midiMessages;
     double timeOfEvent = 0;
-    double secondsPerQuarterNote = 60.0 / 90.0;
-    double durationTicks = noteDurationInSeconds * secondsPerQuarterNote * 90.0;
+    double durationTicks = noteDurationInQuarters * ticksPerQuarterNote;
 
     for (const std::vector<int>& chord : midiNotes) {
         std::vector<juce::MidiMessage> notesInChord;

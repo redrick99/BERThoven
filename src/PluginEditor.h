@@ -49,7 +49,7 @@ public:
 private:
     /// Background image of Beethoven.
     juce::Image background;
-    double noteDurationInSeconds = 0.5;
+    double noteDurationInQuarters = 1.0;
 
     // needed for the mini piano keyboard
     juce::MidiKeyboardState kbdState;

@@ -29,6 +29,16 @@ BerthovenProcessor::BerthovenProcessor()
     if (midiRawFile.existsAsFile()) {
         midiRawFile.deleteFile();
     }
+
+    // Sets the TPQN value depending on the currently used DAW.
+    juce::PluginHostType hT;
+    if (hT.isFruityLoops() || hT.isStudioOne()) {
+        ticksPerQuarterNote = 480.0;
+    }
+    else {
+        ticksPerQuarterNote = 960.0;
+    }
+    model.setTicksPerQuarterNote(ticksPerQuarterNote);
 }
 
 
@@ -204,12 +214,13 @@ void BerthovenProcessor::addMidi(juce::MidiMessage msg, int sampleOffset)
         model.putMidiEvent(msg);
 }
 
-void BerthovenProcessor::predict(int numberOfNotesToPredict, double noteDurationInSeconds, std::vector<juce::MidiMessage> externalMessages)
+void BerthovenProcessor::predict(int numberOfNotesToPredict, double noteDurationInQuarters, std::vector<juce::MidiMessage> externalMessages)
 {
     for (auto midiEvent : externalMessages) {
+        // Puts MIDI events from external files into prediction input events.
         model.putMidiEvent(midiEvent);
     }
-    std::vector<juce::MidiMessage> predictedNotes = model.predict(numberOfNotesToPredict, noteDurationInSeconds);
+    std::vector<juce::MidiMessage> predictedNotes = model.predict(numberOfNotesToPredict, noteDurationInQuarters);
     createMidiFile(predictedNotes);
 }
 
@@ -223,19 +234,23 @@ void BerthovenProcessor::createMidiFile(const std::vector<juce::MidiMessage>& mi
 
     juce::MidiMessageSequence sequence;
     juce::MidiFile file;
+    // Creates a sequence of MIDIs to be written to file.
     for (const auto& event : midiEvents) {
         sequence.addEvent(event);
     }
+    // Synchronizes noteOns and noteOffs automatically.
     sequence.updateMatchedPairs();
 
     std::string path = std::filesystem::path(__FILE__).parent_path().string() + "/predicted_notes.mid";
     juce::File midiRawFile = juce::File::createFileWithoutCheckingPath(path);
+    // Deletes file if it already exists (so it doesn't duplicate it).
     if (midiRawFile.existsAsFile()) {
         midiRawFile.deleteFile();
     }
     juce::FileOutputStream stream (midiRawFile);
     file.clear();
-    file.setTicksPerQuarterNote(90);
+    // Sets the number of ticks per quarter note (depends on the DAW being used).
+    file.setTicksPerQuarterNote(static_cast<int>(ticksPerQuarterNote));
     file.addTrack(sequence);
     file.writeTo(stream);
 }

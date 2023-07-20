@@ -13,17 +13,17 @@ juce_add_plugin(berthoven
         # ICON_BIG ...                              # ICON_* arguments specify a path to an image file to use as an icon for the Standalone
         # ICON_SMALL ...
         COMPANY_NAME redrick99                          # Specify the name of the plugin's author
-        IS_SYNTH TRUE                       # Is this a synth or an effect?
+        IS_SYNTH FALSE                       # Is this a synth or an effect?
         NEEDS_MIDI_INPUT TRUE               # Does the plugin need midi input?
         NEEDS_MIDI_OUTPUT TRUE              # Does the plugin need midi output?
-        # IS_MIDI_EFFECT TRUE                 # Is this plugin a MIDI effect?
+        IS_MIDI_EFFECT TRUE                 # Is this plugin a MIDI effect?
         # EDITOR_WANTS_KEYBOARD_FOCUS TRUE/FALSE    # Does the editor need keyboard focus?
         COPY_PLUGIN_AFTER_BUILD TRUE        # Should the plugin be installed to a default location after building?
         PLUGIN_MANUFACTURER_CODE RedR               # A four-character manufacturer id with at least one upper-case character
         PLUGIN_CODE ber0                            # A unique four-character plugin id with exactly one upper-case character
         # GarageBand 10.3 requires the first letter to be upper-case, and the remaining letters to be lower-case
         FORMATS AU VST3 Standalone                  # The formats to build. Other valid formats are: AAX Unity VST AU AUv3
-        PRODUCT_NAME "berthoven")        # The name of the final executable, which can differ from the target name
+        PRODUCT_NAME "BERThoven")        # The name of the final executable, which can differ from the target name
 
 # you can do this since we are not using torch any more
 juce_generate_juce_header(berthoven)

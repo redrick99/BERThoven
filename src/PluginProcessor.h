@@ -65,10 +65,10 @@ public:
     /**
      * @brief Predicts a number of notes using BERThoven's model.
      * @param numberOfNotesToPredict Specified by the user.
-     * @param noteDurationInSeconds Duration of each predicted note in seconds.
+     * @param noteDurationInQuarters Duration of each predicted note in quarters.
      * @param externalMessages Vector containing external messages if the user dropped a MIDI file on the GUI.
      */
-    void predict(int numberOfNotesToPredict, double noteDurationInSeconds, std::vector<juce::MidiMessage> externalMessages);
+    void predict(int numberOfNotesToPredict, double noteDurationInQuarters, std::vector<juce::MidiMessage> externalMessages);
     /**
      * @brief Resets the neural network model to initial conditions.
      */
@@ -76,6 +76,7 @@ public:
 private:
     /// Model used for prediction.
     BerthovenModel model;
+    double ticksPerQuarterNote;
     /// Temporary file on which to store predicted notes.
     juce::File predictedNotesFile;
 
