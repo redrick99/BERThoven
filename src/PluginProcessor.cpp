@@ -148,15 +148,19 @@ bool BerthovenProcessor::isBusesLayoutSupported (const BusesLayout& layouts) con
 
 void BerthovenProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
-    if (midiToProcess.getNumEvents() > 0){
-        midiMessages.addEvents(midiToProcess, midiToProcess.getFirstEventTime(), midiToProcess.getLastEventTime()+1, 0);
-        midiToProcess.clear();
-    }
+    // if (midiToProcess.getNumEvents() > 0){
+    //     midiMessages.addEvents(midiToProcess, midiToProcess.getFirstEventTime(), midiToProcess.getLastEventTime()+1, 0);
+    //     midiToProcess.clear();
+    //}
 
     juce::MidiBuffer generatedMessages{};
 
     for (const auto metadata : midiMessages){
         auto message = metadata.getMessage();
+        auto editor = dynamic_cast<BerthovenEditor*>(getActiveEditor());
+        if (editor != nullptr)
+            editor->toggleKeyOnMidiKeyboard(message);
+
         if (message.isNoteOn()){
 
         }
@@ -165,9 +169,9 @@ void BerthovenProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
         }
     }
     // optionally wipe out the original messages
-    midiMessages.clear();
+    // midiMessages.clear();
 
-    midiMessages.addEvents(generatedMessages, generatedMessages.getFirstEventTime(), -1, 0);
+    // midiMessages.addEvents(generatedMessages, generatedMessages.getFirstEventTime(), -1, 0);
 
 }
 

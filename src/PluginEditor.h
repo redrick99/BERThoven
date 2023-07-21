@@ -46,6 +46,8 @@ public:
     // from MidiKeyboardState
     void handleNoteOff(juce::MidiKeyboardState *source, int midiChannel, int midiNoteNumber, float velocity) override;
 
+    void toggleKeyOnMidiKeyboard(juce::MidiMessage msg);
+
 private:
     /// Background image of Beethoven.
     juce::Image background;

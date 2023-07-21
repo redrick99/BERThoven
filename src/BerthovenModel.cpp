@@ -51,7 +51,7 @@ void BerthovenModel::clearMidiEvents() {
     mtx.unlock();
 }
 
-std::vector<juce::MidiMessage> BerthovenModel::predict(int numberOfNotesToPredict, double noteDurationInSeconds) {
+std::vector<juce::MidiMessage> BerthovenModel::predict(int numberOfNotesToPredict, double noteDurationInQuarters) {
     std::vector<juce::MidiMessage> input;
     std::vector<juce::MidiMessage> output;
     if (storedMidiEvents.size() < max_length) {
@@ -85,7 +85,7 @@ std::vector<juce::MidiMessage> BerthovenModel::predict(int numberOfNotesToPredic
         predictedNoteInt.push_back(stringToMidiNotes(predictedNote, octave));
     }
 
-    output = midiNotesToMessages(predictedNoteInt, noteDurationInSeconds);
+    output = midiNotesToMessages(predictedNoteInt, noteDurationInQuarters);
 
     for (auto midi : std::vector<juce::MidiMessage>(output)) {
         if (midi.isNoteOn()) {

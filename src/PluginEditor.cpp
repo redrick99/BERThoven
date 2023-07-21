@@ -28,6 +28,7 @@ BerthovenEditor::BerthovenEditor (BerthovenProcessor& p)
 
     noteDurationSlider.addListener(this);
     noteDurationSlider.setRange(0.5, 4, 0.5);
+    noteDurationSlider.setValue(1.0, juce::dontSendNotification);
     noteDurationSlider.setTextValueSuffix(" q");
     noteDurationSliderLabel.setText("Note duration", juce::dontSendNotification);
 
@@ -137,7 +138,6 @@ void BerthovenEditor::handleNoteOn(juce::MidiKeyboardState *source, int midiChan
 {
     juce::MidiMessage msg1 = juce::MidiMessage::noteOn(midiChannel, midiNoteNumber, velocity);
     audioProcessor.addMidi(msg1, 0);
-
 }
 
 void BerthovenEditor::handleNoteOff(juce::MidiKeyboardState *source, int midiChannel, int midiNoteNumber, float velocity)
@@ -145,6 +145,19 @@ void BerthovenEditor::handleNoteOff(juce::MidiKeyboardState *source, int midiCha
     juce::MidiMessage msg2 = juce::MidiMessage::noteOff(midiChannel, midiNoteNumber, velocity);
     audioProcessor.addMidi(msg2, 0);
 }
+
+void BerthovenEditor::toggleKeyOnMidiKeyboard(juce::MidiMessage msg)
+{
+    if (msg.isNoteOn())
+        kbdState.noteOn(1, msg.getNoteNumber(), 1);
+    else if (msg.isNoteOff())
+        kbdState.noteOff(1, msg.getNoteNumber(), 1);
+    //auto mms = juce::Desktop::getInstance().getMainMouseSource();
+    //auto fakeEvent = juce::MouseEvent (mms, /* other ctor arguments here */);
+    //miniPianoKbd.mouseDownOnKey(noteNumber, juce::MouseEvent::getEventRelativeTo(this));
+}
+
+
 
 void BerthovenEditor::toggleEnableComponents(bool enabled)
 {
